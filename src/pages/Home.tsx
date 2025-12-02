@@ -9,8 +9,13 @@ import GlobalFooter from '../components/GlobalFooter';
 ChartJS.register(ArcElement, Tooltip, Legend);
 
 interface DashboardSummary {
-    ongoingCampaigns: number;
-    successCases: number;
+    totalCampaigns: number;
+    statusCounts: {
+        ONGOING?: number;
+        CASE_REGISTERED?: number;
+        CREATING?: number;
+        DB_REGISTERED?: number;
+    };
     totalKnowledge: number;
 }
 
@@ -29,16 +34,25 @@ interface RecentActivityItem {
     messageResults: any[];
 }
 
-const CampaignStatus: React.FC<{ ongoingCampaigns: number }> = ({ ongoingCampaigns }) => {
-    const data = {
-        labels: ['진행 중', '미진행'],
+const statusMapping: { [key: string]: { label: string; color: string } } = {
+    CREATING: { label: '생성중', color: '#FFC107' },
+    ONGOING: { label: '진행중', color: '#007BFF' },
+    CASE_REGISTERED: { label: '사례 등록', color: '#28A745' },
+    DB_REGISTERED: { label: 'DB 등록', color: '#00C6FF' },
+};
+
+const CampaignStatus: React.FC<{ totalCampaigns: number, statusCounts: DashboardSummary['statusCounts'] }> = ({ totalCampaigns, statusCounts }) => {
+    const statusOrder: (keyof DashboardSummary['statusCounts'])[] = ['CREATING', 'ONGOING', 'CASE_REGISTERED', 'DB_REGISTERED'];
+
+    const chartData = {
+        labels: statusOrder.map(key => statusMapping[key]?.label || key),
         datasets: [
             {
-                data: [ongoingCampaigns, 20 - ongoingCampaigns], // 예시 데이터: 총 20개 중 진행 중인 캠페인 수
-                backgroundColor: ['#00C6FF', '#E0E0E0'],
-                borderColor: ['#00C6FF', '#E0E0E0'],
+                data: statusOrder.map(key => statusCounts[key] || 0),
+                backgroundColor: statusOrder.map(key => statusMapping[key]?.color || '#E0E0E0'),
+                borderColor: statusOrder.map(key => statusMapping[key]?.color || '#E0E0E0'),
                 borderWidth: 1,
-                cutout: '80%', // 도넛 두께 조절
+                cutout: '80%',
             },
         ],
     };
@@ -48,10 +62,10 @@ const CampaignStatus: React.FC<{ ongoingCampaigns: number }> = ({ ongoingCampaig
         maintainAspectRatio: false,
         plugins: {
             legend: {
-                display: false,
+                display: false, // Disable default legend
             },
             tooltip: {
-                enabled: false,
+                enabled: true,
             }
         },
     };
@@ -60,33 +74,68 @@ const CampaignStatus: React.FC<{ ongoingCampaigns: number }> = ({ ongoingCampaig
         id: 'textCenter',
         beforeDraw: (chart: ChartJS) => {
             const { ctx } = chart;
-            const centerX = chart.getDatasetMeta(0).data[0].x;
-            const centerY = chart.getDatasetMeta(0).data[0].y;
+            const centerX = chart.getDatasetMeta(0).data[0]?.x;
+            const centerY = chart.getDatasetMeta(0).data[0]?.y;
+
+            if (!centerX || !centerY) return;
             
             ctx.save();
             ctx.font = 'bold 24px sans-serif';
             ctx.fillStyle = '#333333';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText(`${ongoingCampaigns}개`, centerX, centerY - 10);
+            ctx.fillText(`${totalCampaigns}개`, centerX, centerY - 10);
 
             ctx.font = '16px sans-serif';
             ctx.fillStyle = '#666666';
-            ctx.fillText('진행 중', centerX, centerY + 15);
+            ctx.fillText('총 캠페인', centerX, centerY + 15);
             ctx.restore();
         }
+    };
+
+    const hexToRgba = (hex: string, alpha: number) => {
+        const r = parseInt(hex.slice(1, 3), 16);
+        const g = parseInt(hex.slice(3, 5), 16);
+        const b = parseInt(hex.slice(5, 7), 16);
+        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
     };
 
     return (
         <div id="campaign-status" className="home-section">
             <h2>캠페인 현황</h2>
-            <div style={{ height: '200px', position: 'relative' }}>
-                <Doughnut data={data} options={options} plugins={[textCenterPlugin]} />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ width: '200px', height: '200px', position: 'relative' }}>
+                    <Doughnut data={chartData} options={options} plugins={[textCenterPlugin]} />
+                </div>
+                <div className="custom-legend" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', marginLeft: '40px' }}>
+                    {statusOrder.map(key => {
+                        const statusInfo = statusMapping[key];
+                        const value = statusCounts[key];
+                        if (!statusInfo) return null;
+                        return (
+                            <div 
+                                key={key} 
+                                style={{ 
+                                    display: 'inline-flex', 
+                                    alignItems: 'center', 
+                                    marginBottom: '10px',
+                                    padding: '4px 12px',
+                                    borderRadius: '8px',
+                                    backgroundColor: hexToRgba(statusInfo.color, 0.1),
+                                    border: `1px solid ${hexToRgba(statusInfo.color, 0.3)}`,
+                                    color: '#333'
+                                }}
+                            >
+                                <span style={{ width: '10px', height: '10px', backgroundColor: statusInfo.color, marginRight: '8px', borderRadius: '50%' }}></span>
+                                <span>{statusInfo.label}: <strong>{value || 0}개</strong></span>
+                            </div>
+                        );
+                    })}
+                </div>
             </div>
         </div>
     );
 };
-
 const RecentPromotions: React.FC<{ activities: RecentActivityItem[] }> = ({ activities }) => {
     const navigate = useNavigate();
 
@@ -136,6 +185,8 @@ const RecentPromotions: React.FC<{ activities: RecentActivityItem[] }> = ({ acti
 };
 
 
+import mainViewImage from '../assets/main_view.png';
+
 const Home: React.FC = () => {
     const navigate = useNavigate();
     const [summaryData, setSummaryData] = useState<DashboardSummary | null>(null);
@@ -184,10 +235,11 @@ const Home: React.FC = () => {
 
     return (
         <div className="home-container">
-            <div className="centered-button-container">
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '20px' }}>
+                <img src={mainViewImage} alt="Main Visual" style={{ width: '100%', maxWidth: '800px', marginBottom: '20px' }} />
                 <button className="new-promotion-button" onClick={handleNewPromotionClick}>새 프로모션 만들기</button>
             </div>
-            {summaryData && <CampaignStatus ongoingCampaigns={summaryData.ongoingCampaigns} />}
+            {summaryData && <CampaignStatus totalCampaigns={summaryData.totalCampaigns} statusCounts={summaryData.statusCounts} />}
             <RecentPromotions activities={recentActivityData} />
         </div>
     );
