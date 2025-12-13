@@ -42,15 +42,15 @@
     display: flex;
     align-items: center;
     font-size: 2rem; /* Slightly smaller for the top bar */
-    font-weight: bold;
-    font-family: 'Arial Black', sans-serif;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 900;
 }
 
 .logo-main {
     background: linear-gradient(to right, #4A90E2, #00C6FF);
     -webkit-background-clip: text;
     background-clip: text;
-    color: transparent;
+    -webkit-text-fill-color: transparent;
 }
 
 .logo-separator {

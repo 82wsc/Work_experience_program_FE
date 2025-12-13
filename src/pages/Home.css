@@ -176,7 +176,8 @@
 /* Removed old .maix-welcome card styling */
 
 .maix-welcome-logo {
-    font-size: 9rem; /* Larger font size for MAIX */
+    font-family: 'Nunito', sans-serif;
+    font-size: 7.8rem; /* Larger font size for MAIX */
     margin-bottom: 0px;
     font-weight: 900; /* Made font weight even bolder */
     background: linear-gradient(to right, #4A90E2, #00C6FF); /* Gradient from GlobalHeader */
@@ -196,7 +197,7 @@
 }
 
 .maix-tagline h2 {
-    font-size: 1.75rem;
+    font-size: 1.6rem;
     font-weight: normal;
     color: #555;
     line-height: 1.6;
@@ -205,7 +206,7 @@
 }
 
 .chat-container.initial-state h4 {
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     font-weight: normal;
     color: #777;
     margin-top: 0px;
