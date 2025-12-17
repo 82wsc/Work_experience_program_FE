@@ -25,8 +25,28 @@ const Home: React.FC = () => {
     const [displayedAssistantResponse, setDisplayedAssistantResponse] = useState(''); // Stores the currently displayed part
     const [typingIndex, setTypingIndex] = useState(0); // Index for typing animation
     const [isTyping, setIsTyping] = useState(false); // Flag for typing animation
+    const [loadingMessage, setLoadingMessage] = useState('');
     const chatWindowRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const funLoadingMessages = [
+        "당신을 위해 한 번 더 생각하는 중",
+        "최고의 답변을 찾고 있어요",
+        "데이터의 바다에서 헤엄치는 중",
+        "인사이트를 얻기 위해 커피 한 잔 하는 중",
+        "창의력을 발휘하는 중",
+        "알고리즘과 씨름하고 있어요",
+        "잠시만요, 유레카의 순간을 기다리는 중",
+        "뉴런을 활성화하고 있어요",
+        "지식의 나무를 오르는 중",
+        "더 나은 제안을 위해 고심 중"
+    ];
+
+    useEffect(() => {
+        if (isLoading) {
+            const randomIndex = Math.floor(Math.random() * funLoadingMessages.length);
+            setLoadingMessage(funLoadingMessages[randomIndex]);
+        }
+    }, [isLoading]);
 
     // Effect to load chat history when the component mounts or conversationId from URL changes
     useEffect(() => {
@@ -180,7 +200,7 @@ const Home: React.FC = () => {
                             <Bot size={20} color="white" />
                         </div>
                         <div className="message assistant">
-                            <p>메시지 생성중<span className="typing-dots"><span>.</span><span>.</span><span>.</span></span></p>
+                            <p>{loadingMessage}<span className="typing-dots"><span>.</span><span>.</span><span>.</span></span></p>
                             <span className="message-timestamp">{new Date().toLocaleTimeString('ko-KR')}</span>
                         </div>
                     </div>
