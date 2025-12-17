@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { NavLink, Link, useLocation } from 'react-router-dom';
+import { NavLink, Link, useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { BarChart3, Database, TrendingUp, Sparkles } from 'lucide-react';
 import ktLogo from '../assets/KT_Logo.png';
@@ -16,6 +16,7 @@ const GlobalHeader: React.FC = () => {
     const [totalPages, setTotalPages] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
     const location = useLocation();
+    const navigate = useNavigate();
     const SESSIONS_PER_PAGE = 10;
     const MAX_SESSIONS = 50;
 
@@ -68,9 +69,10 @@ const GlobalHeader: React.FC = () => {
         try {
             await axios.delete(`/api/chat/sessions/${conversationId}`);
             alert('대화 기록이 삭제되었습니다.');
-            // Refetch all sessions from page 0 to refresh the list
-            setSessions([]); // Clear current sessions to ensure a fresh fetch
-            fetchSessions(0);
+
+            // Immediately remove the session from the UI
+            setSessions(prevSessions => prevSessions.filter(s => s.conversationId !== conversationId));
+
             // If the deleted conversation was the active one, navigate to home
             if (location.pathname === `/chat/${conversationId}`) {
                 navigate('/');

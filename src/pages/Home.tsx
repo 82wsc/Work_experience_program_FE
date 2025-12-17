@@ -131,28 +131,26 @@ const Home: React.FC = () => {
         try {
             const response = await axios.post('http://localhost:8080/api/campaigns/build/interactive', payload);
             const { ai_response, conversation_id: newConversationId, is_finished } = response.data;
+
+            if (is_finished) {
+                navigate('/promotion/create', { state: { campaignData: response.data.current_campaign_data } });
+                setIsLoading(false);
+                return;
+            }
             
             if (!conversationId && newConversationId) {
-                // This was the first message of a new chat.
-                // The URL should be updated to reflect the new conversationId.
+                setMessages(prev => [...prev, { role: 'assistant', content: ai_response, timestamp: new Date().toLocaleTimeString('ko-KR') }]);
                 navigate(`/chat/${newConversationId}`, { replace: true });
-                // If navigating, no typing animation needed for this message as page will change
-                setMessages(prev => [...prev, { role: 'assistant', content: ai_response }]);
-                setConversationId(newConversationId); // Ensure conversationId is set
-                setIsLoading(false); // End loading here if navigating
+                setConversationId(newConversationId);
+                setIsLoading(false); 
             } else {
                 // Start typing animation for the assistant's response
                 setCurrentAssistantResponse(ai_response);
                 setDisplayedAssistantResponse('');
                 setTypingIndex(0);
                 setIsTyping(true);
-                // isLoading will be set to false after typing animation completes or if is_finished is true
-            }
-
-            if (is_finished) {
-                navigate('/promotion/create', { state: { campaignData: response.data.current_campaign_data } });
-                // Ensure loading is off if navigating away
-                setIsLoading(false);
+                // isLoading remains true to keep the form disabled.
+                // The loading message will hide because isTyping is now true.
             }
 
         } catch (error) {
@@ -162,10 +160,7 @@ const Home: React.FC = () => {
                 content: '오류가 발생했습니다. 메시지를 보내는 데 실패했습니다.',
             };
             setMessages(prev => [...prev, errorMessage]);
-        } finally {
-            if (!isTyping && !newConversationId) { // Only set isLoading false if not typing or navigating
-                setIsLoading(false);
-            }
+            setIsLoading(false); // Ensure loading stops on error
         }
     };
 

@@ -219,27 +219,56 @@ const CampaignDetailPage = () => {
     setIsTitleExpanded(!isTitleExpanded);
   };
 
-  const fetchCampaignDetail = async () => {
-    try {
+  const fetchCampaignDetail = async (isInitialLoad = false) => {
+    if (isInitialLoad) {
       setLoading(true);
+    }
+    try {
       setError(null);
       const response = await axios.get<CampaignDetailFromAPI>(`/api/campaigns/${campaignId}`);
       const transformedData = transformApiResponse(response.data);
+      
+      // Only set initial campaign on the first load
+      if (isInitialLoad || !initialCampaign) {
+        setInitialCampaign(JSON.parse(JSON.stringify(transformedData))); 
+      }
       setCampaign(transformedData);
-      setInitialCampaign(JSON.parse(JSON.stringify(transformedData))); // Deep copy for comparison
+
     } catch (err) {
       console.error('Error fetching campaign details:', err);
       setError('캠페인 정보를 불러오는 데 실패했습니다.');
     } finally {
-      setLoading(false);
+      if (isInitialLoad) {
+        setLoading(false);
+      }
     }
   };
 
+  // Initial fetch
   useEffect(() => {
     if (campaignId) {
-      fetchCampaignDetail();
+      fetchCampaignDetail(true);
     }
   }, [campaignId]);
+
+  // Polling effect for processing status
+  useEffect(() => {
+    let intervalId: NodeJS.Timeout | undefined;
+
+    if (campaign && ['PROCESSING', 'REFINING'].includes(campaign.status)) {
+      intervalId = setInterval(() => {
+        console.log('Polling for campaign status...');
+        fetchCampaignDetail(false); // Pass false for subsequent polls
+      }, 5000); // Poll every 5 seconds
+    }
+
+    // Cleanup function to clear interval when status changes or component unmounts
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, [campaign?.status, campaignId]);
 
   // Effect for rotating tips during processing
   useEffect(() => {
